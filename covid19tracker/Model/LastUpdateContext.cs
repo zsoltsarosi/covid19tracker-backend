@@ -1,13 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace covid19tracker.Model
 {
-    public class LastUpdateContext : DbContext
+    public class LastUpdateContext : ContextBase<LastUpdateContext>
     {
         public DbSet<LastUpdate> LastUpdates { get; set; }
 
@@ -29,16 +27,6 @@ namespace covid19tracker.Model
                 new LastUpdate { DataFeed = DataFeedType.WorldAggregated, Date = DateTime.MinValue },
             };
             modelBuilder.Entity<LastUpdate>().HasData(initialLastUpdates);
-        }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder options)
-        {
-            IConfigurationRoot configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json")
-                .Build();
-            var connectionString = configuration.GetConnectionString("Covid19TrackerDatabase");
-            options.UseSqlServer(connectionString);
         }
     }
 }

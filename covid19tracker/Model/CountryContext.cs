@@ -1,6 +1,5 @@
 ﻿using CsvHelper;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -8,7 +7,7 @@ using System.Linq;
 
 namespace covid19tracker.Model
 {
-    public class CountryContext : DbContext
+    public class CountryContext : ContextBase<CountryContext>
     {
         public DbSet<Country> Countries { get; set; }
 
@@ -20,16 +19,6 @@ namespace covid19tracker.Model
 
             var countries = this.GetDataSeed();
             modelBuilder.Entity<Country>().HasData(countries);
-        }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder options)
-        {
-            IConfigurationRoot configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json")
-                .Build();
-            var connectionString = configuration.GetConnectionString("Covid19TrackerDatabase");
-            options.UseSqlServer(connectionString);
         }
 
         private IEnumerable<Country> GetDataSeed()

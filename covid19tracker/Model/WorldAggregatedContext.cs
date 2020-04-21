@@ -1,7 +1,6 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -9,7 +8,7 @@ using System.Linq;
 
 namespace covid19tracker.Model
 {
-    public class WorldAggregatedContext : DbContext
+    public class WorldAggregatedContext : ContextBase<WorldAggregatedContext>
     {
         public DbSet<WorldAggregated> WorldData { get; set; }
 
@@ -21,16 +20,6 @@ namespace covid19tracker.Model
 
             var worldData = this.GetDataSeed();
             modelBuilder.Entity<WorldAggregated>().HasData(worldData);
-        }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder options)
-        {
-            IConfigurationRoot configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json")
-                .Build();
-            var connectionString = configuration.GetConnectionString("Covid19TrackerDatabase");
-            options.UseSqlServer(connectionString);
         }
 
         private IEnumerable<WorldAggregated> GetDataSeed()
