@@ -7,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 
 using covid19tracker.Model;
+using covid19tracker.DataFeed;
 
 namespace covid19tracker
 {
@@ -31,6 +32,8 @@ namespace covid19tracker
             services.AddDbContext<WorldAggregatedContext>(opt => opt
             .UseSqlServer(connectionString, providerOptions => providerOptions.CommandTimeout(60))
             .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+
+            services.AddScoped<WorldAggregatedFeed>();
 
             services.AddControllers();
         }
