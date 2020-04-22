@@ -51,7 +51,7 @@ namespace covid19tracker.DataFeed
                 _lastUpdateContext.LastUpdates.First(m => m.DataFeed == DataFeedType.WorldAggregated).Date = DateTime.UtcNow;
                 await _lastUpdateContext.SaveChangesAsync();
             }
-            var result = await _dbContext.WorldData.ToListAsync();
+            var result = await _dbContext.WorldData.OrderBy(x => x.Date).ToListAsync();
             return result;
         }
 
