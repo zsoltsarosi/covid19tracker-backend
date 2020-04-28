@@ -21,7 +21,7 @@ namespace covid19tracker.Controllers
             _logger = logger;
         }
 
-        // GET: api/WorldAggregated
+        // GET: api/worldaggregated
         [HttpGet]
         public async Task<ActionResult<IList<WorldAggregated>>> GetEntries()
         {

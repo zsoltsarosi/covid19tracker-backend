@@ -11,18 +11,13 @@ namespace covid19tracker.Migrations.LastUpdate
                 name: "LastUpdates",
                 columns: table => new
                 {
-                    DataFeed = table.Column<string>(nullable: false),
+                    Id = table.Column<string>(nullable: false),
                     Date = table.Column<DateTime>(nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_LastUpdates", x => x.DataFeed);
+                    table.PrimaryKey("PK_LastUpdates", x => x.Id);
                 });
-
-            migrationBuilder.InsertData(
-                table: "LastUpdates",
-                columns: new[] { "DataFeed", "Date" },
-                values: new object[] { "WorldAggregated", new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified) });
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

@@ -10,7 +10,7 @@ using covid19tracker.Model;
 namespace covid19tracker.Migrations.LastUpdate
 {
     [DbContext(typeof(LastUpdateContext))]
-    [Migration("20200421095116_LastUpdateInitial")]
+    [Migration("20200428090422_LastUpdateInitial")]
     partial class LastUpdateInitial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -23,22 +23,15 @@ namespace covid19tracker.Migrations.LastUpdate
 
             modelBuilder.Entity("covid19tracker.Model.LastUpdate", b =>
                 {
-                    b.Property<string>("DataFeed")
+                    b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
-                    b.HasKey("DataFeed");
+                    b.HasKey("Id");
 
                     b.ToTable("LastUpdates");
-
-                    b.HasData(
-                        new
-                        {
-                            DataFeed = "WorldAggregated",
-                            Date = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
-                        });
                 });
 #pragma warning restore 612, 618
         }

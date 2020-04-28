@@ -6,10 +6,10 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using covid19tracker.Model;
 
-namespace covid19tracker.Migrations.LastUpdate
+namespace covid19tracker.Migrations.RssNews
 {
-    [DbContext(typeof(LastUpdateContext))]
-    partial class LastUpdateContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(RssNewsContext))]
+    partial class RssNewsContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
@@ -19,7 +19,7 @@ namespace covid19tracker.Migrations.LastUpdate
                 .HasAnnotation("Relational:MaxIdentifierLength", 128)
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-            modelBuilder.Entity("covid19tracker.Model.LastUpdate", b =>
+            modelBuilder.Entity("covid19tracker.Model.RssNews", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
@@ -27,9 +27,27 @@ namespace covid19tracker.Migrations.LastUpdate
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("FeedId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Link")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SourceName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SourceUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
-                    b.ToTable("LastUpdates");
+                    b.ToTable("News");
                 });
 #pragma warning restore 612, 618
         }

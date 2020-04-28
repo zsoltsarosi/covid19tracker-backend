@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using System.IO;
 using CsvHelper;
 using System.Globalization;
+using System.Linq.Expressions;
 
 namespace covid19tracker.DataFeed
 {
@@ -22,6 +23,9 @@ namespace covid19tracker.DataFeed
         private WorldAggregatedContext _dbContext;
         private LastUpdateContext _lastUpdateContext;
 
+        private static string FeedId = DataFeedType.WorldAggregated.ToString();
+        private readonly Expression<Func<LastUpdate, bool>> LastUpdatePredicate = x => x.Id == FeedId;
+
         public WorldAggregatedFeed(WorldAggregatedContext dbContext, LastUpdateContext lastUpdateContext, ILogger<WorldAggregatedFeed> logger)
         {
             _dbContext = dbContext;
@@ -31,7 +35,7 @@ namespace covid19tracker.DataFeed
 
         public async Task<IList<WorldAggregated>> GetData()
         {
-            var updateNeeded = this.CheckIfUpdateNeeded();
+            var updateNeeded = await this.CheckIfUpdateNeeded();
             if (updateNeeded)
             {
                 var downloadUrl = await this.GetDownloadUrl();
@@ -44,19 +48,23 @@ namespace covid19tracker.DataFeed
                         response.EnsureSuccessStatusCode();
 
                         using (var stream = await response.Content.ReadAsStreamAsync())
-                        using (var streamReader = new StreamReader(stream)) InsertNewRecords(streamReader);
+                        using (var streamReader = new StreamReader(stream)) await InsertNewRecords(streamReader);
                     }
                 }
 
-                _lastUpdateContext.LastUpdates.First(m => m.DataFeed == DataFeedType.WorldAggregated).Date = DateTime.UtcNow;
+                // set last update to now
+                var entity = await _lastUpdateContext.LastUpdates.AsNoTracking().SingleAsync(this.LastUpdatePredicate);
+                entity.Date = DateTime.UtcNow;
+                _lastUpdateContext.Update(entity);
                 await _lastUpdateContext.SaveChangesAsync();
             }
             var result = await _dbContext.WorldData.OrderBy(x => x.Date).ToListAsync();
             return result;
         }
 
-        private void InsertNewRecords(StreamReader streamReader)
+        private async Task InsertNewRecords(StreamReader streamReader)
         {
+            var addCnt = 0;
             using (var csv = new CsvReader(streamReader, CultureInfo.InvariantCulture))
             {
                 csv.Configuration.HasHeaderRecord = true;
@@ -64,24 +72,24 @@ namespace covid19tracker.DataFeed
                 var records = csv.GetRecords<WorldAggregated>().ToList();
                 foreach (var record in records)
                 {
-                    if (_dbContext.WorldData.FirstOrDefault(w => w.Date.Date == record.Date.Date) == null)
-                    {
-                        // record missing -- needs to be inserted
-                        _dbContext.WorldData.Add(record);
-                    }
-                    //  (no updates)
+                    if (await _dbContext.WorldData.SingleOrDefaultAsync(w => w.Date.Date == record.Date.Date) != null) continue;
+
+                    // record missing -- needs to be inserted
+                    _dbContext.WorldData.Add(record);
+                    addCnt++;
                 }
                 _dbContext.SaveChanges();
+                _logger.LogInformation($"Added {addCnt} world data in the database");
             }
         }
 
-        private bool CheckIfUpdateNeeded()
+        private async Task<bool> CheckIfUpdateNeeded()
         {
             DateTime yesterday = DateTime.Now.AddDays(-1);
-            if (_dbContext.WorldData.FirstOrDefault(w => w.Date.Date == yesterday.Date) == null)
+            if (await _dbContext.WorldData.SingleOrDefaultAsync(w => w.Date.Date == yesterday.Date) == null)
             {
                 // if there's data from yesterday
-                var lastUpdate = this.GetLastUpdate();
+                var lastUpdate = await this.GetLastUpdateAsync();
                 if (DateTime.UtcNow - lastUpdate > TimeSpan.FromHours(2))
                 {
                     // and haven't checked for update in the past 2 hours
@@ -118,10 +126,15 @@ namespace covid19tracker.DataFeed
             }
         }
 
-        private DateTime GetLastUpdate()
+        private async Task<DateTime> GetLastUpdateAsync()
         {
-            var lastUpdate = _lastUpdateContext.LastUpdates.FirstOrDefault(u => u.DataFeed == DataFeedType.WorldAggregated);
-            if (lastUpdate == null) return DateTime.MinValue;
+            var lastUpdate = await _lastUpdateContext.LastUpdates.SingleOrDefaultAsync(this.LastUpdatePredicate);
+            if (lastUpdate == null)
+            {
+                _lastUpdateContext.LastUpdates.Add(new LastUpdate { Id = FeedId, Date = DateTime.MinValue });
+                await _lastUpdateContext.SaveChangesAsync();
+                return DateTime.MinValue;
+            }
 
             return lastUpdate.Date;
         }
