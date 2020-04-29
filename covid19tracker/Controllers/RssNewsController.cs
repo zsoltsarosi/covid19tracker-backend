@@ -31,9 +31,9 @@ namespace covid19tracker.Controllers
 
         // GET: api/rssnews/image/52780748426025
         [HttpGet("image/{newsId}")]
-        public async Task<ActionResult<byte[]>> GetImageData(string newsId)
+        public async Task<ActionResult<string>> GetImageUrl(string newsId)
         {
-            var result = await _feed.GetImageData(newsId);
+            var result = await _feed.GetImageUrl(newsId);
             return result;
         }
     }

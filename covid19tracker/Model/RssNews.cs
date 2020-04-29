@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace covid19tracker.Model
 {
@@ -10,6 +11,7 @@ namespace covid19tracker.Model
         public string Id { get; set; }
 
         [Required]
+        [JsonIgnore]
         public string FeedId { get; set; }
 
         [Required]

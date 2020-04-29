@@ -78,24 +78,21 @@ namespace covid19tracker.DataFeed
             }
 
             // take the last 20 news
-            var result = await _dbContext.News.OrderByDescending(x => x.Date).Take(20).ToListAsync();
+            var result = await _dbContext.News.OrderByDescending(x => x.Date).Take(50).ToListAsync();
             return result;
         }
 
-        public async Task<byte[]> GetImageData(string newsId)
+        public async Task<string> GetImageUrl(string newsId)
         {
             var newsItem = await _dbContext.News.SingleOrDefaultAsync(w => w.Id == newsId);
-            if (newsItem == null) return new byte[0];
+            if (newsItem == null) return null;
 
-            byte[] imgContent = await DownloadImage(newsItem.Link);
-
-            return imgContent;
+            string imgUrl = await this.ExtractImageUrl(newsItem.Link);
+            return imgUrl;
         }
 
-        private async Task<byte[]> DownloadImage(string link)
+        private async Task<string> ExtractImageUrl(string link)
         {
-            byte[] imgContent = null;
-
             try
             {
                 using (var httpClient = new HttpClient())
@@ -110,18 +107,7 @@ namespace covid19tracker.DataFeed
                             doc.Load(stream);
                             HtmlNodeCollection metaImageNodes = doc.DocumentNode.SelectNodes("/html/head/meta[@property='og:image']");
                             var imgUrl = metaImageNodes.FirstOrDefault()?.Attributes["content"]?.Value;
-                            if (imgUrl != null)
-                            {
-                                using (HttpClient client = new HttpClient())
-                                {
-                                    using (var imgResponse = await httpClient.GetAsync(imgUrl))
-                                    {
-                                        imgResponse.EnsureSuccessStatusCode();
-
-                                        imgContent = await imgResponse.Content.ReadAsByteArrayAsync();
-                                    }
-                                }
-                            }
+                            return imgUrl;
                         }
                     }
                 }
@@ -131,15 +117,14 @@ namespace covid19tracker.DataFeed
                 _logger.LogError(ex, "Error downloading image", link);
             }
 
-            return imgContent;
+            return null;
         }
 
         private async Task<bool> CheckIfUpdateNeeded()
         {
             var lastUpdate = await this.GetLastUpdateAsync();
-            if (DateTime.UtcNow - lastUpdate > TimeSpan.FromHours(1))
+            if (DateTime.UtcNow - lastUpdate > TimeSpan.FromMinutes(120))
             {
-                // we haven't checked for update in the past 1 hours
                 return true;
             }
 
