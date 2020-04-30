@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Net.Http;
 using HtmlAgilityPack;
 using System.Linq.Expressions;
+using ImageMagick;
 
 namespace covid19tracker.DataFeed
 {
@@ -36,6 +37,12 @@ namespace covid19tracker.DataFeed
             FeedId = $"{DataFeedType.RssNews}#GoogleNews#{Covid19TopicId}#{country}#{locale}";
         }
 
+        public async Task<RssNews> GetNews(string newsId)
+        {
+            var newsItem = await _dbContext.News.SingleOrDefaultAsync(w => w.Id == newsId);
+            return newsItem;
+        }
+
         public async Task<IList<RssNews>> GetData()
         {
             var updateNeeded = await this.CheckIfUpdateNeeded();
@@ -53,6 +60,7 @@ namespace covid19tracker.DataFeed
                     // news missing -- needs to be inserted
 
                     var mrssItem = item.SpecificItem as MediaRssFeedItem;
+                    var img = await this.GetThumbnail(item.Link);
 
                     _dbContext.News.Add(new RssNews
                     {
@@ -61,6 +69,7 @@ namespace covid19tracker.DataFeed
                         Date = item.PublishingDate.HasValue ? item.PublishingDate.Value.ToUniversalTime() : DateTime.UtcNow,
                         Title = item.Title,
                         Link = item.Link,
+                        ImageData = img,
                         SourceName = mrssItem?.Source?.Value,
                         SourceUrl = mrssItem?.Source?.Url,
                     });
@@ -82,17 +91,9 @@ namespace covid19tracker.DataFeed
             return result;
         }
 
-        public async Task<string> GetImageUrl(string newsId)
+        private async Task<byte[]> GetThumbnail(string link)
         {
-            var newsItem = await _dbContext.News.SingleOrDefaultAsync(w => w.Id == newsId);
-            if (newsItem == null) return null;
-
-            string imgUrl = await this.ExtractImageUrl(newsItem.Link);
-            return imgUrl;
-        }
-
-        private async Task<string> ExtractImageUrl(string link)
-        {
+            byte[] imgContent = null;
             try
             {
                 using (var httpClient = new HttpClient())
@@ -107,9 +108,28 @@ namespace covid19tracker.DataFeed
                             doc.Load(stream);
                             HtmlNodeCollection metaImageNodes = doc.DocumentNode.SelectNodes("/html/head/meta[@property='og:image']");
                             var imgUrl = metaImageNodes.FirstOrDefault()?.Attributes["content"]?.Value;
-                            return imgUrl;
+                            if (imgUrl != null)
+                            {
+                                using (HttpClient client = new HttpClient())
+                                {
+                                    using (var imgResponse = await httpClient.GetAsync(imgUrl))
+                                    {
+                                        imgResponse.EnsureSuccessStatusCode();
+                                        imgContent = await imgResponse.Content.ReadAsByteArrayAsync();
+                                    }
+                                }
+                            }
                         }
                     }
+                }
+
+                using (MagickImage image = new MagickImage(imgContent))
+                {
+                    var size = new MagickGeometry(300, 100);
+                    size.IgnoreAspectRatio = false;
+                    image.Resize(size);
+                    image.Format = MagickFormat.Jpg;
+                    imgContent = image.ToByteArray();
                 }
             }
             catch (Exception ex)
@@ -117,7 +137,7 @@ namespace covid19tracker.DataFeed
                 _logger.LogError(ex, "Error downloading image", link);
             }
 
-            return null;
+            return imgContent;
         }
 
         private async Task<bool> CheckIfUpdateNeeded()

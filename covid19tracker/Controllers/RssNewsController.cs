@@ -29,11 +29,11 @@ namespace covid19tracker.Controllers
             return result.ToList();
         }
 
-        // GET: api/rssnews/image/52780748426025
-        [HttpGet("image/{newsId}")]
-        public async Task<ActionResult<string>> GetImageUrl(string newsId)
+        // GET: api/rssnews/52780748426025
+        [HttpGet("{newsId}")]
+        public async Task<ActionResult<RssNews>> GetNews(string newsId)
         {
-            var result = await _feed.GetImageUrl(newsId);
+            var result = await _feed.GetNews(newsId);
             return result;
         }
     }
