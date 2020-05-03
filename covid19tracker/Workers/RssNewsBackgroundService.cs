@@ -4,6 +4,7 @@ using covid19tracker.Model;
 using HtmlAgilityPack;
 using ImageMagick;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -54,12 +55,14 @@ namespace covid19tracker.Workers
 
                 using (IServiceScope scope = _services.CreateScope())
                 {
-                    var rssNewsContext = scope.ServiceProvider.GetRequiredService<RssNewsContext>();
+                    var db = scope.ServiceProvider.GetRequiredService<RssNewsContext>();
                     var lastUpdateContext = scope.ServiceProvider.GetRequiredService<LastUpdateContext>();
 
-                    await this.CheckForNews(rssNewsContext, lastUpdateContext);
+                    await this.CheckForNews(db, lastUpdateContext);
 
-                    // TODO: delete old news
+                    // delete old news
+                    var deleted = await db.Database.ExecuteSqlRawAsync("DELETE FROM dbo.News WHERE Date < {0}", DateTime.UtcNow.AddDays(-_settings.RetentionInDays));
+                    _logger.LogInformation($"Deleted {deleted} old news.");
                 }
 
                 await Task.Delay(_settings.CheckIntervalInMinutes * 60 * 1000, stoppingToken);
