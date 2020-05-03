@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using covid19tracker.Model;
-using covid19tracker.DataFeed;
+using Microsoft.EntityFrameworkCore;
 
 namespace covid19tracker.Controllers
 {
@@ -12,12 +12,12 @@ namespace covid19tracker.Controllers
     [ApiController]
     public class RssNewsController : ControllerBase
     {
-        private readonly RssNewsFeed _feed;
+        private RssNewsContext _dbContext;
         private readonly ILogger<RssNewsController> _logger;
 
-        public RssNewsController(RssNewsFeed feed, ILogger<RssNewsController> logger)
+        public RssNewsController(RssNewsContext dbContext, ILogger<RssNewsController> logger)
         {
-            _feed = feed;
+            _dbContext = dbContext;
             _logger = logger;
         }
 
@@ -25,16 +25,16 @@ namespace covid19tracker.Controllers
         [HttpGet]
         public async Task<ActionResult<IList<RssNews>>> GetNews()
         {
-            var result = await _feed.GetData();
-            return result.ToList();
+            var result = await _dbContext.News.OrderByDescending(x => x.Date).Take(50).ToListAsync();
+            return result;
         }
 
         // GET: api/rssnews/52780748426025
         [HttpGet("{newsId}")]
         public async Task<ActionResult<RssNews>> GetNews(string newsId)
         {
-            var result = await _feed.GetNews(newsId);
-            return result;
+            var newsItem = await _dbContext.News.SingleOrDefaultAsync(w => w.Id == newsId);
+            return newsItem;
         }
     }
 }

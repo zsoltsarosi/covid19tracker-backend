@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 using covid19tracker.Model;
 using covid19tracker.DataFeed;
+using covid19tracker.Workers;
 
 namespace covid19tracker
 {
@@ -23,6 +24,8 @@ namespace covid19tracker
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.Configure<RssNewsServiceSettings>(Configuration.GetSection("RssNews"));
+
             var connectionString = Configuration.GetConnectionString("Covid19TrackerDatabase");
 
             services.AddDbContext<CountryContext>(opt => opt
@@ -42,7 +45,6 @@ namespace covid19tracker
             .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
 
             services.AddScoped<WorldAggregatedFeed>();
-            services.AddScoped<RssNewsFeed>();
 
             services.AddControllers();
         }
