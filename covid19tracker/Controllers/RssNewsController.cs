@@ -33,7 +33,7 @@ namespace covid19tracker.Controllers
         [HttpGet("{newsId}")]
         public async Task<ActionResult<RssNews>> GetNews(string newsId)
         {
-            var newsItem = await _dbContext.News.SingleOrDefaultAsync(w => w.Id == newsId);
+            var newsItem = await _dbContext.News.FirstOrDefaultAsync(w => w.Id == newsId);
             return newsItem;
         }
     }

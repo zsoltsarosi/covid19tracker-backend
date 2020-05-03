@@ -43,14 +43,14 @@ namespace covid19tracker.Workers
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogDebug($"{nameof(RssNewsBackgroundService)} is starting.");
+            _logger.LogInformation($"{nameof(RssNewsBackgroundService)} is starting.");
 
             stoppingToken.Register(() =>
-                _logger.LogDebug($"{nameof(RssNewsBackgroundService)} is stopping."));
+                _logger.LogInformation($"{nameof(RssNewsBackgroundService)} is stopping."));
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                _logger.LogDebug($"Checking for news.");
+                _logger.LogInformation($"Checking for news.");
 
                 using (IServiceScope scope = _services.CreateScope())
                 {
@@ -60,20 +60,14 @@ namespace covid19tracker.Workers
 
                     // delete old news
                     var deleted = await db.Database.ExecuteSqlRawAsync("DELETE FROM dbo.News WHERE Date < {0}", DateTime.UtcNow.AddDays(-_settings.RetentionInDays));
-                    _logger.LogInformation($"Deleted {deleted} old news.");
+                    _logger.LogDebug($"Deleted {deleted} old news.");
                 }
 
+                _logger.LogDebug($"Waiting for {_settings.CheckIntervalInMinutes} minutes.");
                 await Task.Delay(_settings.CheckIntervalInMinutes * 60 * 1000, stoppingToken);
             }
 
-            _logger.LogDebug($"{nameof(RssNewsBackgroundService)} is stopped.");
-        }
-
-        public override async Task StopAsync(CancellationToken stoppingToken)
-        {
-            _logger.LogInformation($"{nameof(RssNewsBackgroundService)} is stopping.");
-
-            await Task.CompletedTask;
+            _logger.LogInformation($"{nameof(RssNewsBackgroundService)} is stopped.");
         }
 
         private async Task CheckForNews(RssNewsContext rssNewsContext, LastUpdateContext lastUpdateContext)
@@ -85,12 +79,13 @@ namespace covid19tracker.Workers
 
                 var feed = await FeedReader.ReadAsync(feedUrl);
 
+                _logger.LogDebug($"Found {feed.Items.Count} items in feed.");
+
                 var addCnt = 0;
                 foreach (var item in feed.Items)
                 {
                     // prevent duplicates if ID has changed
-                    if (await rssNewsContext.News.SingleOrDefaultAsync(w => w.Id == item.Id
-                        || (w.Title == item.Title && w.Link == item.Link)) != null) continue;
+                    if (await rssNewsContext.News.FirstOrDefaultAsync(w => w.Id == item.Id || w.Link == item.Link) != null) continue;
 
                     // news missing -- needs to be inserted
 
@@ -118,9 +113,12 @@ namespace covid19tracker.Workers
                         SourceUrl = mrssItem?.Source?.Url,
                     });
                     addCnt++;
+
+                    // break after adding some news
+                    if (addCnt == 5) break;
                 }
 
-                rssNewsContext.SaveChanges();
+                if (addCnt > 0) rssNewsContext.SaveChanges();
                 _logger.LogInformation($"Added {addCnt} news in the database");
 
                 // set last update to now

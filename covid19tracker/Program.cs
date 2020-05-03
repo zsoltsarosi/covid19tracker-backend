@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using NLog.Web;
 
 namespace covid19tracker
 {
@@ -18,10 +19,9 @@ namespace covid19tracker
                 .ConfigureLogging(logging =>
                 {
                     logging.ClearProviders();
-                    logging.AddConsole();
-                    // TODO: add only in development
-                    logging.AddEventLog();
+                    logging.SetMinimumLevel(LogLevel.Debug);
                 })
+                .UseNLog()
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
