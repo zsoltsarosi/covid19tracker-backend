@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using covid19tracker.Model;
 
 namespace covid19tracker.Migrations.RssNews
 {
     [DbContext(typeof(RssNewsContext))]
-    partial class RssNewsContextModelSnapshot : ModelSnapshot
+    [Migration("20200503140003_RssNewsWithEndUrl")]
+    partial class RssNewsWithEndUrl
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

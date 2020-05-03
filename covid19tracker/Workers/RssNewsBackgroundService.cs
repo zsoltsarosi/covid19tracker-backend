@@ -4,7 +4,6 @@ using covid19tracker.Model;
 using HtmlAgilityPack;
 using ImageMagick;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -57,7 +56,6 @@ namespace covid19tracker.Workers
                 {
                     var db = scope.ServiceProvider.GetRequiredService<RssNewsContext>();
                     var lastUpdateContext = scope.ServiceProvider.GetRequiredService<LastUpdateContext>();
-
                     await this.CheckForNews(db, lastUpdateContext);
 
                     // delete old news
@@ -69,6 +67,13 @@ namespace covid19tracker.Workers
             }
 
             _logger.LogDebug($"{nameof(RssNewsBackgroundService)} is stopped.");
+        }
+
+        public override async Task StopAsync(CancellationToken stoppingToken)
+        {
+            _logger.LogInformation($"{nameof(RssNewsBackgroundService)} is stopping.");
+
+            await Task.CompletedTask;
         }
 
         private async Task CheckForNews(RssNewsContext rssNewsContext, LastUpdateContext lastUpdateContext)
@@ -83,14 +88,22 @@ namespace covid19tracker.Workers
                 var addCnt = 0;
                 foreach (var item in feed.Items)
                 {
-                    if (await rssNewsContext.News.SingleOrDefaultAsync(w => w.Id == item.Id) != null) continue;
+                    // prevent duplicates if ID has changed
+                    if (await rssNewsContext.News.SingleOrDefaultAsync(w => w.Id == item.Id
+                        || (w.Title == item.Title && w.Link == item.Link)) != null) continue;
 
                     // news missing -- needs to be inserted
 
-                    _logger.LogDebug($"Parsing news {item.Id}:{item.Title}");
+                    _logger.LogDebug($"Parsing news {item.Title}");
 
                     var mrssItem = item.SpecificItem as MediaRssFeedItem;
-                    var img = await this.GetThumbnail(item.Link);
+
+                    byte[] img = null;
+                    var endUrl = await this.CheckForRedirectsAsync(item.Link);
+                    if (endUrl != null)
+                    {
+                        img = await this.GetThumbnail(endUrl);
+                    }
 
                     rssNewsContext.News.Add(new RssNews
                     {
@@ -99,6 +112,7 @@ namespace covid19tracker.Workers
                         Date = item.PublishingDate.HasValue ? item.PublishingDate.Value.ToUniversalTime() : DateTime.UtcNow,
                         Title = item.Title,
                         Link = item.Link,
+                        EndUrl = endUrl,
                         ImageData = img,
                         SourceName = mrssItem?.Source?.Value,
                         SourceUrl = mrssItem?.Source?.Url,
@@ -170,6 +184,49 @@ namespace covid19tracker.Workers
             }
 
             return imgContent;
+        }
+
+        private async Task<string> CheckForRedirectsAsync(string url)
+        {
+            int redirectsLeft = 3;
+            string endUrl = null;
+
+            do
+            {
+                var handler = new HttpClientHandler();
+                handler.AllowAutoRedirect = false; // do redirects manually
+                using (var httpClient = new HttpClient(handler))
+                using (var response = await httpClient.GetAsync(url))
+                {
+                    if (response.StatusCode == HttpStatusCode.MovedPermanently ||
+                        response.StatusCode == HttpStatusCode.Moved ||
+                        response.StatusCode == HttpStatusCode.Found)
+                    {
+                        url = response.Headers.Location.OriginalString;
+                        redirectsLeft -= 1;
+                    }
+                    else if (response.StatusCode == HttpStatusCode.NotFound)
+                    {
+                        url = response.RequestMessage.RequestUri.OriginalString;
+                        redirectsLeft -= 1;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            response.EnsureSuccessStatusCode();
+                            endUrl = url;
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, $"Status code not success: {url}");
+                            redirectsLeft = 0;
+                        }
+                    }
+                }
+            } while (endUrl == null && redirectsLeft != 0);
+
+            return endUrl;
         }
 
         private async Task<bool> CheckIfUpdateNeeded(LastUpdateContext dbContext)

@@ -23,6 +23,8 @@ namespace covid19tracker.Model
         [Required]
         public string Link { get; set; }
 
+        public string EndUrl { get; set; }
+
         public byte[] ImageData { get; set; }
 
         public string SourceName { get; set; }
