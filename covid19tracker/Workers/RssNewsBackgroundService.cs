@@ -24,6 +24,7 @@ namespace covid19tracker.Workers
         private readonly RssNewsServiceSettings _settings;
         private readonly IServiceProvider _services;
 
+        // TODO localized news for other cultures and languages as well
         private string locale = "en-US";
         private string country = "US";
         private static string Covid19TopicId = "CAAqIggKIhxDQkFTRHdvSkwyMHZNREZqY0hsNUVnSmxiaWdBUAE";
@@ -60,10 +61,10 @@ namespace covid19tracker.Workers
 
                     // delete old news
                     var deleted = await db.Database.ExecuteSqlRawAsync("DELETE FROM dbo.News WHERE Date < {0}", DateTime.UtcNow.AddDays(-_settings.RetentionInDays));
-                    _logger.LogDebug($"Deleted {deleted} old news.");
+                    _logger.LogDebug($"Deleted {deleted} news older than {_settings.RetentionInDays} days.");
                 }
 
-                _logger.LogDebug($"Waiting for {_settings.CheckIntervalInMinutes} minutes.");
+                _logger.LogDebug($"Waiting {_settings.CheckIntervalInMinutes} minutes.");
                 await Task.Delay(_settings.CheckIntervalInMinutes * 60 * 1000, stoppingToken);
             }
 
