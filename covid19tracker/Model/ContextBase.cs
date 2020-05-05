@@ -1,10 +1,6 @@
-﻿using CsvHelper;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
-using System.Linq;
 
 namespace covid19tracker.Model
 {

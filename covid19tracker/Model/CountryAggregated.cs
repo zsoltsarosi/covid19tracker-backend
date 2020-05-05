@@ -1,6 +1,5 @@
 ﻿using CsvHelper.Configuration.Attributes;
 using System;
-using System.ComponentModel.DataAnnotations;
 
 namespace covid19tracker.Model
 {
