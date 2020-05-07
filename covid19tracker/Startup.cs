@@ -50,13 +50,11 @@ namespace covid19tracker
 
             services.AddScoped<WorldAggregatedFeed>();
 
-            services.AddControllers();
-
-            services.AddMvc()
-             .AddJsonOptions(options =>
-             {
-                 options.JsonSerializerOptions.IgnoreNullValues = true;
-             });
+            services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.IgnoreNullValues = true;
+                });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
