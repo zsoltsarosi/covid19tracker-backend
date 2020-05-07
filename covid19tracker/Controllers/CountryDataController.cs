@@ -25,14 +25,39 @@ namespace covid19tracker.Controllers
         [HttpGet]
         public async Task<ActionResult<IList<CountryAggregated>>> GetEntries()
         {
+            if (!_db.CountriesData.Any())
+            {
+                // no entries in db
+                return Enumerable.Empty<CountryAggregated>().ToList();
+            }
             var lastDateEntry = await _db.CountriesData.OrderByDescending(x => x.Date).FirstOrDefaultAsync();
             if (lastDateEntry == null) // no entires in db
             {
+                // that's weird
+                _logger.LogWarning("No reasonable (?) data in CountriesData");
                 return Enumerable.Empty<CountryAggregated>().ToList();
             }
 
             var lastDateEntries = await _db.CountriesData.Where(x => x.Date == lastDateEntry.Date).OrderBy(x => x.Country).ToListAsync();
             return lastDateEntries;
+        }
+
+        // GET: api/countrydata/{country}
+        [HttpGet("{country}")]
+        public async Task<ActionResult<IList<CountryAggregated>>> GetCountryDetails(string country)
+        {
+            if (!_db.CountriesData.Any())
+            {
+                // no entries in db
+                return Enumerable.Empty<CountryAggregated>().ToList();
+            }
+
+            var countryData = await _db.CountriesData.Where(x => x.Country == country).OrderBy(x => x.Date).ToListAsync();
+            foreach (var item in countryData)
+            {
+                item.Country = null;
+            }
+            return countryData;
         }
     }
 }
