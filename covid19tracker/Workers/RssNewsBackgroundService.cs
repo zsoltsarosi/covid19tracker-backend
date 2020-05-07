@@ -78,6 +78,8 @@ namespace covid19tracker.Workers
             {
                 var feedUrl = string.Format(_feedUrl, locale, country);
 
+                _logger.LogDebug($"Checking feed from: {feedUrl}");
+
                 var feed = await FeedReader.ReadAsync(feedUrl);
 
                 _logger.LogDebug($"Found {feed.Items.Count} items in feed.");
@@ -90,7 +92,13 @@ namespace covid19tracker.Workers
 
                     // news missing -- needs to be inserted
 
-                    _logger.LogDebug($"Parsing news {item.Title}");
+                    _logger.LogDebug($"Parsing news {item.Title}::{item.PublishingDateString}");
+
+                    if (item.PublishingDate.HasValue && item.PublishingDate < DateTime.UtcNow.AddDays(-_settings.RetentionInDays))
+                    {
+                        _logger.LogDebug("News too old, skipping.");
+                        continue;
+                    }
 
                     var mrssItem = item.SpecificItem as MediaRssFeedItem;
 

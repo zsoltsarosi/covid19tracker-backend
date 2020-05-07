@@ -28,6 +28,7 @@ namespace covid19tracker
                 })
                 .ConfigureServices(services =>
                 {
+                    services.AddHostedService<WorldAggregatedService>();
                     services.AddHostedService<RssNewsBackgroundService>();
                 })
             ;
