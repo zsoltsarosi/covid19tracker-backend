@@ -198,42 +198,50 @@ namespace covid19tracker.Workers
             int redirectsLeft = 3;
             string endUrl = null;
 
-            do
+            try
             {
-                var handler = new HttpClientHandler();
-                handler.AllowAutoRedirect = false; // do redirects manually
-                using (var httpClient = new HttpClient(handler))
-                using (var response = await httpClient.GetAsync(url))
+                do
                 {
-                    if (response.StatusCode == HttpStatusCode.MovedPermanently ||
-                        response.StatusCode == HttpStatusCode.Moved ||
-                        response.StatusCode == HttpStatusCode.Found)
+                    var handler = new HttpClientHandler();
+                    handler.AllowAutoRedirect = false; // do redirects manually
+                    using (var httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(20) })
+                    using (var response = await httpClient.GetAsync(url))
                     {
-                        url = response.Headers.Location.OriginalString;
-                        redirectsLeft -= 1;
-                    }
-                    else if (response.StatusCode == HttpStatusCode.NotFound)
-                    {
-                        url = response.RequestMessage.RequestUri.OriginalString;
-                        redirectsLeft -= 1;
-                    }
-                    else
-                    {
-                        try
+                        if (response.StatusCode == HttpStatusCode.MovedPermanently ||
+                            response.StatusCode == HttpStatusCode.Moved ||
+                            response.StatusCode == HttpStatusCode.Found)
                         {
-                            response.EnsureSuccessStatusCode();
-                            endUrl = url;
+                            url = response.Headers.Location.OriginalString;
+                            redirectsLeft -= 1;
                         }
-                        catch (Exception ex)
+                        else if (response.StatusCode == HttpStatusCode.NotFound)
                         {
-                            _logger.LogError(ex, $"Status code not success: {url}");
-                            redirectsLeft = 0;
+                            url = response.RequestMessage.RequestUri.OriginalString;
+                            redirectsLeft -= 1;
+                        }
+                        else
+                        {
+                            try
+                            {
+                                response.EnsureSuccessStatusCode();
+                                endUrl = url;
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, $"Status code not success: {url}");
+                                redirectsLeft = 0;
+                            }
                         }
                     }
-                }
-            } while (endUrl == null && redirectsLeft != 0);
+                } while (endUrl == null && redirectsLeft != 0);
 
-            return endUrl;
+                return endUrl;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error extracting end url: {url}");
+                return null;
+            }
         }
 
         private async Task<bool> CheckIfUpdateNeeded(LastUpdateContext dbContext)
@@ -243,13 +251,13 @@ namespace covid19tracker.Workers
             return true;
         }
 
-        private async Task<DateTime> GetLastUpdateAsync(LastUpdateContext dbContext)
+        private async Task<DateTime> GetLastUpdateAsync(LastUpdateContext db)
         {
-            var lastUpdate = await dbContext.LastUpdates.SingleOrDefaultAsync(this.LastUpdatePredicate);
+            var lastUpdate = await db.LastUpdates.SingleOrDefaultAsync(this.LastUpdatePredicate);
             if (lastUpdate == null)
             {
-                dbContext.LastUpdates.Add(new LastUpdate { Id = FeedId, Date = DateTime.MinValue });
-                await dbContext.SaveChangesAsync();
+                db.LastUpdates.Add(new LastUpdate { Id = FeedId, Date = DateTime.MinValue });
+                await db.SaveChangesAsync();
                 return DateTime.MinValue;
             }
 
