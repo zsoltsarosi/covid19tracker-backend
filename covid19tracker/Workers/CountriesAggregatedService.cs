@@ -17,19 +17,19 @@ using Microsoft.Extensions.Options;
 
 namespace covid19tracker.Workers
 {
-    public class WorldAggregatedService : BackgroundService
+    public class CountriesAggregatedService : BackgroundService
     {
-        private const string CUrl = "https://api.github.com/repos/datasets/covid-19/contents/data/worldwide-aggregated.csv";
+        private const string CUrl = "https://api.github.com/repos/datasets/covid-19/contents/data/countries-aggregated.csv";
         private const string CUserAgent = "covid19tracker app";
 
-        private ILogger<WorldAggregatedService> _logger;
-        private readonly WorldAggregatedServiceSettings _settings;
+        private ILogger<CountriesAggregatedService> _logger;
+        private readonly CountriesAggregatedServiceSettings _settings;
         private readonly IServiceProvider _services;
 
-        private static string FeedId = DataFeedType.WorldAggregated.ToString();
+        private static string FeedId = DataFeedType.CountriesAggregated.ToString();
         private readonly Expression<Func<LastUpdate, bool>> LastUpdatePredicate = x => x.Id == FeedId;
 
-        public WorldAggregatedService(IOptions<WorldAggregatedServiceSettings> settings, IServiceProvider services, ILogger<WorldAggregatedService> logger)
+        public CountriesAggregatedService(IOptions<CountriesAggregatedServiceSettings> settings, IServiceProvider services, ILogger<CountriesAggregatedService> logger)
         {
             _logger = logger;
             _settings = settings.Value;
@@ -38,10 +38,10 @@ namespace covid19tracker.Workers
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation($"{nameof(WorldAggregatedService)} is starting.");
+            _logger.LogInformation($"{nameof(CountriesAggregatedService)} is starting.");
 
             stoppingToken.Register(() =>
-                _logger.LogInformation($"{nameof(WorldAggregatedService)} is stopping."));
+                _logger.LogInformation($"{nameof(CountriesAggregatedService)} is stopping."));
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -49,7 +49,7 @@ namespace covid19tracker.Workers
 
                 using (IServiceScope scope = _services.CreateScope())
                 {
-                    var db = scope.ServiceProvider.GetRequiredService<WorldAggregatedContext>();
+                    var db = scope.ServiceProvider.GetRequiredService<CountryAggregatedContext>();
                     var lastUpdateContext = scope.ServiceProvider.GetRequiredService<LastUpdateContext>();
                     await this.CheckForDailyData(db, lastUpdateContext);
                 }
@@ -58,10 +58,10 @@ namespace covid19tracker.Workers
                 await Task.Delay(TimeSpan.FromHours(_settings.CheckIntervalInHours), stoppingToken);
             }
 
-            _logger.LogInformation($"{nameof(WorldAggregatedService)} is stopped.");
+            _logger.LogInformation($"{nameof(CountriesAggregatedService)} is stopped.");
         }
 
-        public async Task CheckForDailyData(WorldAggregatedContext db, LastUpdateContext lastUpdateDb)
+        public async Task CheckForDailyData(CountryAggregatedContext db, LastUpdateContext lastUpdateDb)
         {
             var updateNeeded = await this.CheckIfUpdateNeeded(db, lastUpdateDb);
             if (updateNeeded)
@@ -88,31 +88,30 @@ namespace covid19tracker.Workers
             }
         }
 
-        private async Task InsertNewRecords(WorldAggregatedContext db, StreamReader reader)
+        private async Task InsertNewRecords(CountryAggregatedContext db, StreamReader reader)
         {
             var addCnt = 0;
             using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
             {
                 csv.Configuration.HasHeaderRecord = true;
-                csv.Configuration.RegisterClassMap<WorldAggregatedMap>();
-                var records = csv.GetRecords<WorldAggregated>().ToList();
+                var records = csv.GetRecords<CountryAggregated>().ToList();
                 foreach (var record in records)
                 {
-                    if (await db.WorldData.SingleOrDefaultAsync(w => w.Date.Date == record.Date.Date) != null) continue;
+                    if (await db.CountriesData.SingleOrDefaultAsync(w => w.Date.Date == record.Date.Date && w.Country == record.Country) != null) continue;
 
                     // record missing -- needs to be inserted
-                    db.WorldData.Add(record);
+                    db.CountriesData.Add(record);
                     addCnt++;
                 }
                 db.SaveChanges();
-                _logger.LogInformation($"Added {addCnt} world data in the database");
+                _logger.LogInformation($"Added {addCnt} country data in the database");
             }
         }
 
-        private async Task<bool> CheckIfUpdateNeeded(WorldAggregatedContext db, LastUpdateContext lastUpdateDb)
+        private async Task<bool> CheckIfUpdateNeeded(CountryAggregatedContext db, LastUpdateContext lastUpdateDb)
         {
             DateTime yesterday = DateTime.Now.AddDays(-1);
-            if (await db.WorldData.SingleOrDefaultAsync(w => w.Date.Date == yesterday.Date) == null)
+            if (await db.CountriesData.FirstOrDefaultAsync(w => w.Date.Date == yesterday.Date) == null)
             {
                 // if there's no data from yesterday
                 var lastUpdate = await this.GetLastUpdateAsync(lastUpdateDb);

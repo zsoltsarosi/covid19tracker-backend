@@ -14,6 +14,7 @@ namespace covid19tracker.Model
 
     public enum DataFeedType
     {
+        CountriesAggregated,
         WorldAggregated,
         RssNews
     }
