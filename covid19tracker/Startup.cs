@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 using covid19tracker.Model;
 using covid19tracker.Workers;
+using NLog.Web;
 
 namespace covid19tracker
 {
@@ -62,6 +63,8 @@ namespace covid19tracker
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            var logger = NLogBuilder.ConfigureNLog($"nlog.{env.EnvironmentName}.config").GetCurrentClassLogger();
 
             app.UseHttpsRedirection();
 
