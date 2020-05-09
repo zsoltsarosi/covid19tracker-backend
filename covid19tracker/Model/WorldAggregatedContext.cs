@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace covid19tracker.Model
 {
-    public class WorldAggregatedContext : ContextBase<WorldAggregatedContext>
+    public class WorldAggregatedContext : DbContext
     {
         public DbSet<WorldAggregated> WorldData { get; set; }
 

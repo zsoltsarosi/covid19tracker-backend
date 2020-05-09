@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace covid19tracker.Model
 {
-    public class RssNewsContext : ContextBase<RssNewsContext>
+    public class RssNewsContext : DbContext
     {
         public DbSet<RssNews> News { get; set; }
 

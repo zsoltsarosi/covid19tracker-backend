@@ -2,7 +2,7 @@
 
 namespace covid19tracker.Model
 {
-    public class LastUpdateContext : ContextBase<LastUpdateContext>
+    public class LastUpdateContext : DbContext
     {
         public DbSet<LastUpdate> LastUpdates { get; set; }
 

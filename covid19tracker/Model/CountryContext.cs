@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace covid19tracker.Model
 {
-    public class CountryContext : ContextBase<CountryContext>
+    public class CountryContext : DbContext
     {
         public DbSet<Country> Countries { get; set; }
 
