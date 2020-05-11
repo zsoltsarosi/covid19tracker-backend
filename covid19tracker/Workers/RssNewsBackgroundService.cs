@@ -124,7 +124,7 @@ namespace covid19tracker.Workers
                     addCnt++;
 
                     // break after adding some news
-                    if (addCnt == 5) break;
+                    if (addCnt == _settings.MaxNewsInsertAtOnce) break;
                 }
 
                 if (addCnt > 0) rssNewsContext.SaveChanges();
