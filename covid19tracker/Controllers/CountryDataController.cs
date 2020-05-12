@@ -41,7 +41,7 @@ namespace covid19tracker.Controllers
             }
 
             var lastDateEntries = await _db.CountriesData.Where(x => x.Date == lastDateEntry.Date).OrderBy(x => x.Country)
-                .Select(x => new { t = x.Date.ToShortDateString(), n = x.Country, c = x.Confirmed, r = x.Recovered, d = x.Deaths, n2 = NameToIso(_countryDb, x.Country) })
+                .Select(x => new { t = x.Date, n = x.Country, c = x.Confirmed, r = x.Recovered, d = x.Deaths, n2 = NameToIso(_countryDb, x.Country) })
                 .ToListAsync();
             return lastDateEntries;
         }
@@ -57,7 +57,7 @@ namespace covid19tracker.Controllers
             }
 
             var countryData = await _db.CountriesData.Where(x => x.Country == country).OrderBy(x => x.Date)
-                .Select(x => new { t = x.Date.ToShortDateString(), c = x.Confirmed, r = x.Recovered, d = x.Deaths })
+                .Select(x => new { t = x.Date, c = x.Confirmed, r = x.Recovered, d = x.Deaths })
                 .ToListAsync();
             return countryData;
         }
