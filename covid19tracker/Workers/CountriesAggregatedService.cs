@@ -33,6 +33,7 @@ namespace covid19tracker.Workers
                 var records = csv.GetRecords<CountryAggregated>().ToList();
                 foreach (var record in records)
                 {
+                    record.Country = record.Country.Replace("Taiwan*", "Taiwan");
                     if (await db.CountriesData.SingleOrDefaultAsync(w => w.Date.Date == record.Date.Date && w.Country == record.Country) != null) continue;
 
                     // record missing -- needs to be inserted
