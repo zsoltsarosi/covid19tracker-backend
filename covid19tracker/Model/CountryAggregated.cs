@@ -8,7 +8,6 @@ namespace covid19tracker.Model
     {
         [Index(0)]
         [JsonPropertyName("t")]
-        // TODO: serialize only date part
         public DateTime Date { get; set; }
 
         [Index(1)]

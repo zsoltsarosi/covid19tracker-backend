@@ -13,17 +13,19 @@ namespace covid19tracker.Controllers
     public class CountryDataController : ControllerBase
     {
         private readonly CountryAggregatedContext _db;
+        private readonly CountryContext _countryDb;
         private readonly ILogger<CountryDataController> _logger;
 
-        public CountryDataController(CountryAggregatedContext db, ILogger<CountryDataController> logger)
+        public CountryDataController(CountryAggregatedContext db, CountryContext countryDb, ILogger<CountryDataController> logger)
         {
             _db = db;
+            _countryDb = countryDb;
             _logger = logger;
         }
 
         // GET: api/countrydata
         [HttpGet]
-        public async Task<ActionResult<IList<CountryAggregated>>> GetEntries()
+        public async Task<ActionResult<IEnumerable<object>>> GetEntries()
         {
             if (!_db.CountriesData.Any())
             {
@@ -31,20 +33,22 @@ namespace covid19tracker.Controllers
                 return Enumerable.Empty<CountryAggregated>().ToList();
             }
             var lastDateEntry = await _db.CountriesData.OrderByDescending(x => x.Date).FirstOrDefaultAsync();
-            if (lastDateEntry == null) // no entires in db
+            if (lastDateEntry == null) // no entries in db
             {
                 // that's weird
                 _logger.LogWarning("No reasonable (?) data in CountriesData");
                 return Enumerable.Empty<CountryAggregated>().ToList();
             }
 
-            var lastDateEntries = await _db.CountriesData.Where(x => x.Date == lastDateEntry.Date).OrderBy(x => x.Country).ToListAsync();
+            var lastDateEntries = await _db.CountriesData.Where(x => x.Date == lastDateEntry.Date).OrderBy(x => x.Country)
+                .Select(x => new { t = x.Date.ToShortDateString(), n = x.Country, c = x.Confirmed, r = x.Recovered, d = x.Deaths, n2 = NameToIso(_countryDb, x.Country) })
+                .ToListAsync();
             return lastDateEntries;
         }
 
         // GET: api/countrydata/{country}
         [HttpGet("{country}")]
-        public async Task<ActionResult<IList<CountryAggregated>>> GetCountryDetails(string country)
+        public async Task<ActionResult<IEnumerable<object>>> GetCountryDetails(string country)
         {
             if (!_db.CountriesData.Any())
             {
@@ -52,12 +56,15 @@ namespace covid19tracker.Controllers
                 return Enumerable.Empty<CountryAggregated>().ToList();
             }
 
-            var countryData = await _db.CountriesData.Where(x => x.Country == country).OrderBy(x => x.Date).ToListAsync();
-            foreach (var item in countryData)
-            {
-                item.Country = null;
-            }
+            var countryData = await _db.CountriesData.Where(x => x.Country == country).OrderBy(x => x.Date)
+                .Select(x => new { t = x.Date.ToShortDateString(), c = x.Confirmed, r = x.Recovered, d = x.Deaths })
+                .ToListAsync();
             return countryData;
+        }
+
+        private static string NameToIso(CountryContext countryDb, string name)
+        {
+            return countryDb.Countries.FirstOrDefault(c => c.Name == name)?.Iso2;
         }
     }
 }
