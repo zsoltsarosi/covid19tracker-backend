@@ -13,12 +13,10 @@ namespace covid19tracker.Controllers
     public class WorldAggregatedController : ControllerBase
     {
         private readonly WorldAggregatedContext _db;
-        private readonly ILogger<WorldAggregatedController> _logger;
 
         public WorldAggregatedController(WorldAggregatedContext db, ILogger<WorldAggregatedController> logger)
         {
             _db = db;
-            _logger = logger;
         }
 
         // GET: api/worldaggregated
