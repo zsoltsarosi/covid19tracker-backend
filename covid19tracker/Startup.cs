@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using covid19tracker.Model;
 using covid19tracker.Workers;
 using NLog.Web;
+using covid19tracker.Authentication;
 
 namespace covid19tracker
 {
@@ -24,10 +25,21 @@ namespace covid19tracker
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddTransient<IApiKeyQuery, DbApiKeyQuery>();
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = ApiKeyAuthenticationOptions.DefaultScheme;
+                options.DefaultChallengeScheme = ApiKeyAuthenticationOptions.DefaultScheme;
+            }).AddApiKeySupport(options => { });
+
             services.Configure<WorldAggregatedServiceSettings>(Configuration.GetSection("WorldAggregated"));
             services.Configure<RssNewsServiceSettings>(Configuration.GetSection("RssNews"));
 
             var connectionString = Configuration.GetConnectionString("Covid19TrackerDatabase");
+
+            services.AddDbContext<ApiKeyContext>(opt => opt
+            .UseSqlServer(connectionString, providerOptions => providerOptions.CommandTimeout(60))
+            .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
 
             services.AddDbContext<CountryContext>(opt => opt
             .UseSqlServer(connectionString, providerOptions => providerOptions.CommandTimeout(60))
@@ -70,6 +82,7 @@ namespace covid19tracker
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
