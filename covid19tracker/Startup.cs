@@ -53,10 +53,6 @@ namespace covid19tracker
             .UseSqlServer(connectionString, providerOptions => providerOptions.CommandTimeout(60))
             .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
 
-            services.AddDbContext<CountryAggregatedContext>(opt => opt
-            .UseSqlServer(connectionString, providerOptions => providerOptions.CommandTimeout(60))
-            .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
-
             services.AddDbContext<RssNewsContext>(opt => opt
             .UseSqlServer(connectionString, providerOptions => providerOptions.CommandTimeout(60))
             .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));

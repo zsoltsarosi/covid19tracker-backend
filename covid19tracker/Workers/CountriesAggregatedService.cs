@@ -11,7 +11,7 @@ using Microsoft.Extensions.Options;
 
 namespace covid19tracker.Workers
 {
-    public class CountriesAggregatedService : GitHubFeedService<CountryAggregatedContext, CountriesAggregatedService>
+    public class CountriesAggregatedService : GitHubFeedService<CountryContext, CountriesAggregatedService>
     {
         protected override string CUrl => "https://api.github.com/repos/datasets/covid-19/contents/data/countries-aggregated.csv";
         protected override string FeedId => DataFeedType.CountriesAggregated.ToString();
@@ -24,7 +24,7 @@ namespace covid19tracker.Workers
             _settings = settings.Value;
             this.CCheckIntervalInHours = _settings.CheckIntervalInHours;
         }
-        protected override async Task ParseAndInsertNewRecords(CountryAggregatedContext db, StreamReader reader)
+        protected override async Task ParseAndInsertNewRecords(CountryContext db, StreamReader reader)
         {
             var addCnt = 0;
             using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
@@ -45,7 +45,7 @@ namespace covid19tracker.Workers
             }
         }
 
-        protected override async Task<bool> CheckIfUpdateNeeded(CountryAggregatedContext db, LastUpdateContext lastUpdateDb)
+        protected override async Task<bool> CheckIfUpdateNeeded(CountryContext db, LastUpdateContext lastUpdateDb)
         {
             DateTime yesterday = DateTime.Now.AddDays(-1);
             if (await db.CountriesData.FirstOrDefaultAsync(w => w.Date.Date == yesterday.Date) == null)

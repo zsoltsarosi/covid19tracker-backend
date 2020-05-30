@@ -14,14 +14,12 @@ namespace covid19tracker.Controllers
     [Authorize]
     public class CountryDataController : ControllerBase
     {
-        private readonly CountryAggregatedContext _db;
-        private readonly CountryContext _countryDb;
+        private readonly CountryContext _db;
         private readonly ILogger<CountryDataController> _logger;
 
-        public CountryDataController(CountryAggregatedContext db, CountryContext countryDb, ILogger<CountryDataController> logger)
+        public CountryDataController(CountryContext db, ILogger<CountryDataController> logger)
         {
             _db = db;
-            _countryDb = countryDb;
             _logger = logger;
         }
 
@@ -43,7 +41,7 @@ namespace covid19tracker.Controllers
             }
 
             var lastDateEntries = await _db.CountriesData.Where(x => x.Date == lastDateEntry.Date).OrderBy(x => x.Country)
-                .Select(x => new { t = x.Date, n = x.Country, c = x.Confirmed, r = x.Recovered, d = x.Deaths, n2 = NameToIso(_countryDb, x.Country) })
+                .Select(x => new { t = x.Date, n = x.Country, c = x.Confirmed, r = x.Recovered, d = x.Deaths, n2 = NameToIso(_db, x.Country) })
                 .ToListAsync();
             return lastDateEntries;
         }
