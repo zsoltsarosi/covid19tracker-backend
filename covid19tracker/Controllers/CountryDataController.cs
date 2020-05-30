@@ -40,10 +40,13 @@ namespace covid19tracker.Controllers
                 return Enumerable.Empty<CountryAggregated>().ToList();
             }
 
-            var lastDateEntries = await _db.CountriesData.Where(x => x.Date == lastDateEntry.Date).OrderBy(x => x.Country)
-                .Select(x => new { t = x.Date, n = x.Country, c = x.Confirmed, r = x.Recovered, d = x.Deaths, n2 = NameToIso(_db, x.Country) })
-                .ToListAsync();
-            return lastDateEntries;
+            var lastEntries = from cd in _db.CountriesData
+                              join c in _db.Countries
+                                on cd.Country equals c.Name
+                              where cd.Date == lastDateEntry.Date
+                              select new { t = cd.Date, n = cd.Country, c = cd.Confirmed, r = cd.Recovered, d = cd.Deaths, n2 = c.Iso2, lat = c.Lat, lon = c.Long };
+
+            return await lastEntries.ToListAsync();
         }
 
         // GET: api/countrydata/{country}
@@ -60,11 +63,6 @@ namespace covid19tracker.Controllers
                 .Select(x => new { t = x.Date, c = x.Confirmed, r = x.Recovered, d = x.Deaths })
                 .ToListAsync();
             return countryData;
-        }
-
-        private static string NameToIso(CountryContext countryDb, string name)
-        {
-            return countryDb.Countries.FirstOrDefault(c => c.Name == name)?.Iso2;
         }
     }
 }
