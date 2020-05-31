@@ -1,4 +1,5 @@
 using covid19tracker.Workers;
+using covid19tracker.Workers.RssNews;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -30,7 +31,18 @@ namespace covid19tracker
                 {
                     services.AddHostedService<WorldAggregatedService>();
                     services.AddHostedService<CountriesAggregatedService>();
-                    services.AddHostedService<RssNewsBackgroundService>();
+
+                    services.AddHostedService<RssNewsBackgroundServiceHuHu>();
+                    services.AddHostedService<RssNewsBackgroundServiceJpJp>();
+                    services.AddHostedService<RssNewsBackgroundServiceNlBe>();
+                    services.AddHostedService<RssNewsBackgroundServiceFrBe>();
+
+                    services.AddHostedService<RssNewsBackgroundServiceEnGb>();
+                    services.AddHostedService<RssNewsBackgroundServiceEnUs>();
+
+                    services.AddHostedService<RssNewsBackgroundServiceDeAt>();
+                    services.AddHostedService<RssNewsBackgroundServiceDeDe>();
+                    services.AddHostedService<RssNewsBackgroundServiceDeCh>();
                 })
             ;
     }

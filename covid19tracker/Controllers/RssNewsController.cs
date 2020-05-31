@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using covid19tracker.Model;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using covid19tracker.Workers.RssNews;
 
 namespace covid19tracker.Controllers
 {
@@ -14,20 +15,25 @@ namespace covid19tracker.Controllers
     [Authorize]
     public class RssNewsController : ControllerBase
     {
+        private LocaleFallback _localeFallback;
         private RssNewsContext _dbContext;
         private readonly ILogger<RssNewsController> _logger;
 
-        public RssNewsController(RssNewsContext dbContext, ILogger<RssNewsController> logger)
+        public RssNewsController(LocaleFallback localeFallback, RssNewsContext dbContext, ILogger<RssNewsController> logger)
         {
+            _localeFallback = localeFallback;
             _dbContext = dbContext;
             _logger = logger;
         }
 
         // GET: api/rssnews
         [HttpGet]
-        public async Task<ActionResult<IList<RssNews>>> GetNews()
+        public async Task<ActionResult<IList<RssNews>>> GetNews(string language, string country)
         {
-            var result = await _dbContext.News.OrderByDescending(x => x.Date).Take(50).ToListAsync();
+            var culture = _localeFallback.GetBestLocaleAndCountry(language, country);
+            var result = await _dbContext.News
+                .Where(x => x.FeedId.Contains($"#{culture.Item2}#{culture.Item1}"))
+                .OrderByDescending(x => x.Date).Take(50).ToListAsync();
             return result;
         }
 

@@ -10,44 +10,45 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace covid19tracker.Workers
+namespace covid19tracker.Workers.RssNews
 {
-    public class RssNewsBackgroundService : BackgroundService
+    public abstract class RssNewsBackgroundService : BackgroundService
     {
         private readonly ILogger<RssNewsBackgroundService> _logger;
         private readonly RssNewsServiceSettings _settings;
         private readonly IServiceProvider _services;
 
-        // TODO localized news for other cultures and languages as well
-        private string locale = "en-US";
-        private string country = "US";
+        private string _country;
+        private string _locale;
         private static string Covid19TopicId = "CAAqIggKIhxDQkFTRHdvSkwyMHZNREZqY0hsNUVnSmxiaWdBUAE";
         private string _feedUrl = $"https://news.google.com/rss/topics/{Covid19TopicId}?hl={{0}}&gl={{1}}";
 
-        private static string FeedId = DataFeedType.RssNews.ToString();
-        private readonly Expression<Func<LastUpdate, bool>> LastUpdatePredicate = x => x.Id == FeedId;
+        private string FeedId = DataFeedType.RssNews.ToString();
 
-        public RssNewsBackgroundService(IOptions<RssNewsServiceSettings> settings, IServiceProvider services, ILogger<RssNewsBackgroundService> logger)
+        public RssNewsBackgroundService(IOptions<RssNewsServiceSettings> settings,
+            IServiceProvider services, ILogger<RssNewsBackgroundService> logger,
+            string country, string locale)
         {
             _logger = logger;
             _settings = settings.Value;
             _services = services;
+            _country = country;
+            _locale = locale;
 
-            FeedId = $"{DataFeedType.RssNews}#GoogleNews#{Covid19TopicId}#{country}#{locale}";
+            FeedId = $"{DataFeedType.RssNews}#GoogleNews#{Covid19TopicId}#{_country}#{_locale}";
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation($"{nameof(RssNewsBackgroundService)} is starting.");
+            _logger.LogInformation($"{nameof(RssNewsBackgroundService)}#{_country}#{_locale} is starting.");
 
             stoppingToken.Register(() =>
-                _logger.LogInformation($"{nameof(RssNewsBackgroundService)} is stopping."));
+                _logger.LogInformation($"{nameof(RssNewsBackgroundService)}#{_country}#{_locale} is stopping."));
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -68,7 +69,7 @@ namespace covid19tracker.Workers
                 await Task.Delay(_settings.CheckIntervalInMinutes * 60 * 1000, stoppingToken);
             }
 
-            _logger.LogInformation($"{nameof(RssNewsBackgroundService)} is stopped.");
+            _logger.LogInformation($"{nameof(RssNewsBackgroundService)}#{_country}#{_locale} is stopped.");
         }
 
         private async Task CheckForNews(RssNewsContext rssNewsContext, LastUpdateContext lastUpdateContext)
@@ -76,7 +77,7 @@ namespace covid19tracker.Workers
             var updateNeeded = await this.CheckIfUpdateNeeded(lastUpdateContext);
             if (updateNeeded)
             {
-                var feedUrl = string.Format(_feedUrl, locale, country);
+                var feedUrl = string.Format(_feedUrl, _locale, _country);
 
                 _logger.LogDebug($"Checking feed from: {feedUrl}");
 
@@ -109,7 +110,7 @@ namespace covid19tracker.Workers
                         img = await this.GetThumbnail(endUrl);
                     }
 
-                    rssNewsContext.News.Add(new RssNews
+                    rssNewsContext.News.Add(new Model.RssNews
                     {
                         Id = item.Id,
                         FeedId = FeedId,
@@ -131,7 +132,7 @@ namespace covid19tracker.Workers
                 _logger.LogInformation($"Added {addCnt} news in the database");
 
                 // set last update to now
-                var entity = await lastUpdateContext.LastUpdates.AsNoTracking().SingleAsync(this.LastUpdatePredicate);
+                var entity = await lastUpdateContext.LastUpdates.AsNoTracking().SingleAsync(x => x.Id == FeedId);
                 entity.Date = DateTime.UtcNow;
                 lastUpdateContext.Update(entity);
                 await lastUpdateContext.SaveChangesAsync();
@@ -253,7 +254,7 @@ namespace covid19tracker.Workers
 
         private async Task<DateTime> GetLastUpdateAsync(LastUpdateContext db)
         {
-            var lastUpdate = await db.LastUpdates.SingleOrDefaultAsync(this.LastUpdatePredicate);
+            var lastUpdate = await db.LastUpdates.SingleOrDefaultAsync(x => x.Id == FeedId);
             if (lastUpdate == null)
             {
                 db.LastUpdates.Add(new LastUpdate { Id = FeedId, Date = DateTime.MinValue });

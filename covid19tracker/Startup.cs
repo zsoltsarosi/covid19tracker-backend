@@ -57,6 +57,8 @@ namespace covid19tracker
             .UseSqlServer(connectionString, providerOptions => providerOptions.CommandTimeout(60))
             .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
 
+            services.AddSingleton<Workers.RssNews.LocaleFallback>();
+
             services.AddControllers()
                 .AddJsonOptions(options =>
                 {
