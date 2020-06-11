@@ -20,7 +20,7 @@ I wrote a COVID-19 App in the Lockdown Period of 2020 in Budapest &#9829;
 - API Key Authentication
 - WebView for showing the news
 
-[GitHub Repo](https://github.com/zsoltsarosi/covid19tracker-frontend)
+[Frontend GitHub Repo](https://github.com/zsoltsarosi/covid19tracker-frontend)
 
 
 ## Backend Main Features
@@ -37,7 +37,7 @@ I wrote a COVID-19 App in the Lockdown Period of 2020 in Budapest &#9829;
 - Debug and Release Settings
 - Hosted on Azure
 
-[GitHub Repo](https://github.com/zsoltsarosi/covid19tracker-backend)
+[Backend GitHub Repo](https://github.com/zsoltsarosi/covid19tracker-backend)
 
 
 ## App Features - Content:
