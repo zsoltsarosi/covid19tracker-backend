@@ -1,15 +1,48 @@
-# covid19tracker
+# COVID-19 Tracker App written in .NET Core and Flutter
 
-Quarantine time> yet another covid-19 tracker.
+I wrote a COVID-19 App in the Lockdown Period of 2020 in Budapest &#9829;
 
-## Backend
+## Frontend Main Features
 
-.NET Core Web API
+- Flutter App written in Dart language using VS Code
+- Configuration based on dev / prod
+- Automatic app update
+- Flare animation splash screen
+- BLoC state management
+- Basic localization
+- Infinite Lists
+- Google Charts
+- Markdown info page
+- Custom fonts
+- Location service
+- Animated drawer effect
+- Caching data in local files
+- API Key Authentication
+- WebView for showing the news
+
+[GitHub Repo](https://github.com/zsoltsarosi/covid19tracker-frontend)
+
+
+## Backend Main Features
+
+- Written in C# on .NET Core platform using Visual Studio
+- Entity Framework (EF) Core using Migrations and Data Seeds
+- MS SQL Server Database with Code-First approach
+- .NET Core Web API
+- JSON Serializing
+- NLog Logging
+- API Key Authentication
+- RSS News parsing
+- Worker Services (IHostedService) for data feed (COVID-19 Statistics and News)
+- Debug and Release Settings
+- Hosted on Azure
 
 [GitHub Repo](https://github.com/zsoltsarosi/covid19tracker-backend)
 
-## Frontend
 
-Flutter (Dart)
+## App Features - Content:
 
-[GitHub Repo](https://github.com/zsoltsarosi/covid19tracker-frontend)
+- World aggregated data: number of infections, deaths and recoveries
+- Country specific data: number of infections, deaths and recoveries
+- COVID-19 related news localized in DE, EN and HU languages
+
